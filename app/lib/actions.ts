@@ -75,7 +75,7 @@ export async function createInvoice(prevState: State, formData: FormData) {
 export async function updateInvoice(
   id: string,
   prevState: State,
-  formData: FormData,
+  formData: FormData
 ) {
   const validatedFields = UpdateInvoice.safeParse({
     customerId: formData.get('customerId'),
@@ -109,9 +109,13 @@ export async function updateInvoice(
 
 export async function deleteInvoice(id: string) {
   // throw new Error('Failed to Delete Invoice');
-
   try {
-    await sql`DELETE FROM invoices WHERE id = ${id}`;
+    // await sql`DELETE FROM invoices WHERE id = ${id}`;
+    await sql`
+      UPDATE invoices
+      SET status = ${'canceled'}
+      WHERE id = ${id}
+    `;
     revalidatePath('/dashboard/invoices');
     return { message: 'Deleted Invoice' };
   } catch (error) {
@@ -119,9 +123,23 @@ export async function deleteInvoice(id: string) {
   }
 }
 
+export async function setInvoiceStatus(id: string, status: string) {
+  try {
+    await sql`
+      UPDATE invoices
+      SET status = ${status}
+      WHERE id = ${id}
+    `;
+    revalidatePath('/dashboard/invoices');
+    return { message: 'Updated Invoice Status' };
+  } catch (error) {
+    return { message: 'Database Error: Failed to Set Invoice Status.' };
+  }
+}
+
 export async function authenticate(
   prevState: string | undefined,
-  formData: FormData,
+  formData: FormData
 ) {
   try {
     await signIn('credentials', formData);

@@ -112,6 +112,20 @@ export async function fetchFilteredInvoices(
       LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
     `;
 
+    // A Pending invoice that is older than 14 days should be displayed as Overdue, instead of Pending.
+    invoices.rows.map(async (invoice) => {
+      const timeDifference =
+        new Date().getTime() - new Date(invoice.date).getTime();
+      const daysDifference = Math.round(timeDifference / (1000 * 3600 * 24));
+      if (daysDifference > 14 && invoice.status === 'pending') {
+        await sql`
+        UPDATE invoices
+        SET status = ${'overdue'}
+        WHERE id = ${invoice.id}
+      `;
+      }
+    });
+
     return invoices.rows;
   } catch (error) {
     console.error('Database Error:', error);
